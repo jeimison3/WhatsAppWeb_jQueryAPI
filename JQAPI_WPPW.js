@@ -1,15 +1,44 @@
 
+class ChatListener{
+  constructor(){
+    this.FORM_WEB = ".app-wrapper-web";
+    this.COUNT_CHILD = $(this.FORM_WEB).childElementCount;
+    this.USER_SCREEN = $(this.FORM_WEB).children[this.COUNT_CHILD-1];
+    this.USER_FRIENDS_SCR = this.USER_SCREEN.children[2];
+    this.USER_CHAT_SCR = this.USER_SCREEN.children[3].children[0];
+    this.USER_CHAT_SCR_COUNT = this.USER_CHAT_SCR.childElementCount;
 
-var CLASSE_PAINEL_CONVERSA=".pane.pane-chat.pane-two";
-var CLASSE_CABECALHO_CONVERSA=".pane-header.pane-chat-header";
-var CLASSE_SPAN_NOME_PESSOA=".chat-body .chat-main .chat-title .emojitext.ellipsify";
-var CLASSE_SPAN_VISUALIZACAO_PESSOA=".chat-body .chat-secondary.pane-chat-header-subtitle .emojitext.ellipsify";
-var CLASSE_IMG_FOTO_PESSOA=".chat-avatar .avatar.icon-user-default .avatar-image.is-loaded";
+    this.USER_CHAT_SCR_HDR = this.USER_CHAT_SCR.children[1];
+    this._CHAT_USER_IMG = this.USER_CHAT_SCR_HDR.children[0];
+    this._CHAT_USER_DATA = this.USER_CHAT_SCR_HDR.children[1];
+    this._CHAT_USERNAME = this._CHAT_USER_DATA.children[0].children[0].children[0];
+
+    this.USER_CHAT_SCR_TYPE = this.USER_CHAT_SCR.children[this.USER_CHAT_SCR_COUNT-2].children[0].children[1].children[0].children[1];
+  }
+
+  get chatName(){
+    return this._CHAT_USERNAME.getAttribute('title');
+  }
 
 
-//Dos SPANs, ler o atributo "title".
-var ADDR_CLASSE_NOME_PESSOA= CLASSE_PAINEL_CONVERSA+" "+CLASSE_CABECALHO_CONVERSA+" "+CLASSE_SPAN_NOME_PESSOA;
-var ADDR_CLASSE_VISUALIZACAO_PESSOA= CLASSE_PAINEL_CONVERSA+" "+CLASSE_CABECALHO_CONVERSA+" "+CLASSE_SPAN_VISUALIZACAO_PESSOA;
 
-//Da IMG, ler o atributo "src".
-var ADDR_CLASSE_FOTO_PESSOA= CLASSE_PAINEL_CONVERSA+" "+CLASSE_CABECALHO_CONVERSA+" "+CLASSE_IMG_FOTO_PESSOA;
+  clearMessage(){
+    this.USER_CHAT_SCR_TYPE.textContent='';
+  }
+
+  addMessage(msg){
+    this.USER_CHAT_SCR_TYPE.focus();
+    document.execCommand("insertHTML", false, msg);
+  }
+
+  send(){
+    this.USER_CHAT_BTN_SEND = this.USER_CHAT_SCR.children[this.USER_CHAT_SCR_COUNT-2].children[0].children[2].children[0];
+    this.USER_CHAT_BTN_SEND.click();
+  }
+
+  sendMessage(msg){
+    this.clearMessage();
+    this.addMessage(msg);
+    this.send();
+  }
+}

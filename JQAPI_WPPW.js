@@ -10,81 +10,110 @@ incluiBiblioteca(jqcdn);
 
 */
 
+class ChatListener{
+  setAtivo(){
+    this.FORM_WEB = $("div#app").find("div#main");
+    this.CABECALHO = this.FORM_WEB.find("header");
+    this._CHAT_USER_IMG = this.CABECALHO.find("img");
+    this._CHAT_USERNAME = this.CABECALHO.find("div div div span[dir='auto']").attr("title");
+    if(this._CHAT_USERNAME == undefined) {
+      console.error("ChatListener","Não existe usuário ativo. Tente novamente.");
+      return; 
+    }
+    this.USER_CHAT_SCR_TYPE = this.FORM_WEB.find("footer div div div.copyable-text.selectable-text")[0];
+    this.USER_CHAT_AREA = this.FORM_WEB.find("div[tabindex='0']").find("div[data-tab='2']");
+    console.log("ChatListener has set to '" + this._CHAT_USERNAME + "'");
 
-var ChatListener = function(){
-  this.FORM_WEB = $("div#app").find("div#main");
-  this.CABECALHO = this.FORM_WEB.find("header");
-  this._CHAT_USER_IMG = this.CABECALHO.find("img");
-  this._CHAT_USERNAME = this.CABECALHO.find("div div div span[dir='auto']").attr("title");
-  this.USER_CHAT_SCR_TYPE = this.FORM_WEB.find("footer div div div.copyable-text.selectable-text")[0];
-  //this.USER_CHAT_SCR_TYPE = this.USER_CHAT_SCR.children[this.USER_CHAT_SCR_COUNT-2].children[0].children[1].children[0].children[1];
+    this.USER_CHAT_AREA.on('DOMSubtreeModified', (e)=>this.__evt_chatChange(e));
+  }
+  
+  unset(){
+    this.USER_CHAT_AREA.off('DOMSubtreeModified');
+  }
 
-  this.USER_CHAT_AREA = this.FORM_WEB.find("div.copyable-area").find("div[tabindex='0']");
-  this.USER_CHAT_AREA = this.USER_CHAT_AREA.children().last();
+  __evt_chatChange(e){
+    if(e.target == this.USER_CHAT_AREA[0]){
+      if (!this.decodeMessage(0).recebido){
+        setTimeout(()=>{
+          console.log("Respondendo à "+this.decodeMessage(0).msg);
+          this.sendMsg( this.decodeMessage(0).msg+"." );
+        }, 200);
+        
+      }
+    }
+  }
 
+  clearMessage(){
+    this.USER_CHAT_SCR_TYPE.textContent='';
+  }
 
-  console.log("ChatListener has set to '" + this._CHAT_USERNAME + "'");
+  addMessage(msg){
+    this.USER_CHAT_SCR_TYPE.focus();
+    document.execCommand("insertHTML", false, msg);
+  }
+  send(){
+    this.USER_CHAT_BTN_SEND = this.FORM_WEB.find("footer div.copyable-area").find("div button span[data-icon='send']").parent()[0];
+    this.USER_CHAT_BTN_SEND.click();
+  }
+  sendMsg(msg){
+    this.clearMessage();
+    this.addMessage(msg);
+    this.send();
+  }
+
+  chatDivMessages(){
+    var a = [];
+    this.USER_CHAT_AREA.children().each((id,e)=>{a.push(e);})
+    return a.reverse();
+  }
+
+  __extractContent(span){
+    var strMsg = ""
+    var itms = span.contents()
+    for(let itm of itms){
+      strMsg+= (itm.nodeName == "#text" ? itm.textContent :
+       (itm.nodeName == "IMG" ? itm.alt :
+        (itm.nodeName == "A" ? itm.href :
+          ("(DESCONHECIDO: "+itm.nodeName+")")
+        )
+       )
+      )
+    }
+    return strMsg
+  }
+
+  decodeMessage(id){
+    let messgs = this.chatDivMessages();
+    if( id >= messgs.length ) return -1; // Id inexistente
+    var recebido = !($(messgs[id]).hasClass("message-out"));
+    var hora = $(messgs[id]).find('span[dir="auto"]').last().html()
+
+    var trechos = $(messgs[id]).find('div.copyable-text').children();
+    var respondendo = -1;
+    for(var trecho of trechos){
+      var isRepl = $(trecho).find(".quoted-mention").length > 0;
+      if(isRepl){
+        var respMsg = this.__extractContent( $(trecho).find(".quoted-mention") );
+        for(var i=id+1; i < messgs.length; i++){
+          var itm = this.decodeMessage(i);
+          if(itm.msg == respMsg){
+            respondendo = i;
+            break;
+         }
+        }
+      }
+    }
+
+    var span = trechos.last().find('.selectable-text.invisible-space.copyable-text').find('span');
+    var strMsg = this.__extractContent(span);
+  
+    return {
+      recebido: recebido,
+      msg: strMsg,
+      time: hora,
+      idReply: respondendo,
+      objeto: messgs[id]
+    }
+  }
 }
-
-
-// Acesso de atributos
-
-ChatListener.prototype.chatName = function(){
-  return this._CHAT_USERNAME;
-};
-
-ChatListener.prototype.receiveDivsMessages = function(){
-  var a = [];
-  this.USER_CHAT_AREA.children().each((id,e)=>{a.push(e);})
-  return a;
-};
-
-
-
-// Ações:
-
-ChatListener.prototype.clearMessage = function(){
-  this.USER_CHAT_SCR_TYPE.textContent='';
-};
-
-ChatListener.prototype.addMessage = function(msg){
-  this.USER_CHAT_SCR_TYPE.focus();
-  document.execCommand("insertHTML", false, msg);
-};
-
-ChatListener.prototype.send = function(){
-  this.USER_CHAT_BTN_SEND = this.FORM_WEB.find("footer div.copyable-area").find("div button span[data-icon='send']").parent()[0];
-  this.USER_CHAT_BTN_SEND.click();
-};
-
-
-
-// Leitura de dados:
-
-ChatListener.prototype.sendMessage = function(msg){
-  this.clearMessage();
-  this.addMessage(msg);
-  this.send();
-};
-
-ChatListener.prototype.countChatMessages = function(){
-  return this.USER_CHAT_AREA.children().length;
-};
-var pb_val;
-ChatListener.prototype.decodeMessageId = function(id){
-  if( id >= this.countChatMessages ) return -1; // Id inexistente
-  var obj_msg = $(this.receiveDivsMessages()[id]).find("div.message-out").find("div.copyable-text");
-  pb_val = obj_msg;
-  var envio = obj_msg.attr("data-pre-plain-text");
-  var mensagem = obj_msg.find("div span[dir='ltr']").html();
-
-
-  if(envio == undefined) return -1; // Mensagem ilegível
-
-  var envio = envio.split('] ');
-  var nome = envio[1].replace(':','');
-  var data_0 = envio[0].split('[')[1];
-  var hora_data = data_0.split(', ');
-
-  return [nome,mensagem,hora_data[1],hora_data[0]];
-};
+// var a = new ChatListener(); a.setAtivo(); a.decodeMessage(0); a.chatDivMessages();
